@@ -1,0 +1,29 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Smile Dental Agartala - WhatsApp Booking Demo</title>
+<style>body{margin:0;font-family:system-ui,sans-serif;background:#e5ddd5}header{background:#075e54;color:#fff;padding:14px;font-weight:600}
+#c{padding:12px;padding-bottom:140px}.m{max-width:80%;padding:8px 11px;border-radius:8px;margin:6px 0;white-space:pre-line;box-shadow:0 1px 1px #0002}
+.b{background:#fff}.u{background:#dcf8c6;margin-left:auto}#o{position:fixed;bottom:0;left:0;right:0;background:#f0f0f0;padding:8px;display:flex;flex-wrap:wrap;gap:6px}
+button{flex:1 1 40%;padding:11px;border:0;border-radius:20px;background:#25d366;color:#fff;font-size:15px}a.pay{display:block;text-align:center;background:#075e54;color:#fff;padding:12px;border-radius:20px;text-decoration:none;margin-top:6px}</style></head>
+<body><header>🦷 Smile Dental, Agartala <small>(demo)</small></header><div id="c"></div><div id="o"></div>
+<script>
+const UPI="upi://pay?pa=anubhabr97-3@okicici&pn=Anubhab%20Roy&am=4999&cu=INR&tn=Diwali%20Clinic%20Bot%20Setup";
+const WA="https://wa.me/917005591395?text=";
+const c=document.getElementById('c'),o=document.getElementById('o');let name="Patient",slot="";
+function say(t,u){const d=document.createElement('div');d.className='m '+(u?'u':'b');d.innerHTML=t;c.appendChild(d);scrollTo(0,document.body.scrollHeight)}
+function ask(t,opts){setTimeout(()=>{say(t);o.innerHTML='';opts.forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{say(l,1);o.innerHTML='';f(l)};o.appendChild(b)})},600)}
+function start(){ask("Namaskar 🙏 Welcome to Smile Dental, Agartala.\nHow can we help?",[["Book appointment",treat],["Timings & location",()=>{say("🕘 Mon–Sat 10 AM–8 PM\n📍 Demo address, Agartala");setTimeout(start,900)}],["Talk to staff",()=>{say("Connecting you to reception, they'll reply shortly. 🙂");setTimeout(owner,1500)}]])}
+function treat(){ask("What's the visit for?",[["Check-up",slots],["Tooth pain",t=>{say("Sorry to hear that 😟");slots()}],["Cleaning",slots],["Braces consult",slots]])}
+function slots(){ask("Earliest available slots:",[["Today 6:30 PM",pick],["Tomorrow 10:00 AM",pick],["Tomorrow 12:30 PM",pick]])}
+function pick(s){slot=s;ask("Your name, please?",[["Rahul Das",n=>{name=n;confirm()}],["Priya Saha",n=>{name=n;confirm()}]])}
+function confirm(){setTimeout(()=>{say("✅ Booked!\n"+name+", "+slot+"\n📍 Smile Dental, Agartala\nReply RESCHEDULE anytime.");say("<i>⏳ Demo: reminder arrives in 5 seconds…</i>");
+setTimeout(()=>ask("⏰ Reminder: your appointment is "+slot+".",[["Confirm",()=>{say("Great, see you then! 😊");setTimeout(()=>{say("<i>Next day…</i>");ask("Hope you're feeling better, "+name+"! Could you leave us a quick Google review? ⭐",[["Sure! ⭐⭐⭐⭐⭐",owner]])},1500)}],["Reschedule",slots]]),5000)},600)}
+function owner(){ask("👆 That's exactly what your patients would see, 24/7, with no staff typing.\nWant this for your clinic?",[["🪔 Diwali offer ₹4,999",()=>{say("Setup within 48 hours after payment. Offer valid till 8 Nov.<a class='pay' href='"+UPI+"'>Pay ₹4,999 via UPI</a><a class='pay' href='"+WA+encodeURIComponent("Hi Anubhab, I paid for the Diwali clinic bot. Clinic name: ")+"'>Send clinic details on WhatsApp</a>");}],
+["💰 See how much it recovers",recover],["See monthly plans",()=>{say("Starter ₹3,999/mo\nGrowth ₹7,999/mo\nPremium ₹14,999/mo (ask about discounts)");setTimeout(owner,1200)}],["Ask Anubhab a question",()=>say("<a class='pay' href='"+WA+encodeURIComponent("Hi Anubhab, I tried the clinic bot demo.")+"'>Chat on WhatsApp</a>")]])}
+function recover(){say("<i>Example amounts for illustration, not real clinic data.</i>");
+say("1️⃣ <b>Unfinished treatment</b>\n\"Hi Rahul, your 2nd RCT sitting is due. Book a slot?\" [Book] [Call clinic]\nExample: 1 RCT completed ≈ ₹6,000 recovered");
+say("2️⃣ <b>Treatment plan follow-up</b>\n\"Still thinking about your implant? Here's how it works, and EMI options are available.\" [Book consult]\nExample: 1 implant ≈ ₹25,000");
+say("3️⃣ <b>6-month recall</b>\n\"It's been 6 months since your check-up 🦷 Book a cleaning?\" [Book]\nExample: 10 recalls ≈ ₹8,000");
+say("4️⃣ <b>Pending dues</b>\n\"Friendly reminder: ₹1,500 is pending for your visit on 20 Oct. Pay by UPI.\" [Pay]\nExample: dues collected without awkward calls");
+say("👉 Example: if the bot recovers just 1 implant patient, that's ₹25,000, more than 3 months of the Growth plan.");setTimeout(owner,1500)}
+start();
+</script></body></html>
