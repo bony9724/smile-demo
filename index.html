@@ -32,4 +32,12 @@ go('start');
 <p>দীপাবলি অফার: মাত্র ₹৪,৯৯৯-এ ৪৮ ঘণ্টায় সেটআপ।</p>
 <a class="btn" href="https://wa.me/917005591395?text=I%27d%20like%20the%20Diwali%20pilot">Book my clinic's setup</a><a class="btn" style="background:#5f259f" href="upi://pay?pa=anubhabr97-3@okicici&amp;pn=Anubhab%20Roy&amp;am=4999&amp;cu=INR&amp;tn=Diwali%20pilot%20setup">Pay ₹4,999 by UPI</a><p><small>UPI ID: anubhabr97-3@okicici</small></p></div>
 <div class="card"><h2>Local and personal</h2><p>Run by Anubhab Roy, right here in Agartala. Message any time and you'll get a quick reply.</p></div>
-<small>© 2026 · Agartala, Tripura</small></div></body></html>
+<small>© 2026 · Agartala, Tripura</small></div><div class="card" id="start"><h2>Get started</h2><p>Send your clinic's details. They open in WhatsApp, ready for you to send, and then you can pay to confirm.</p>
+<input id="f1" placeholder="Clinic name" style="width:100%;padding:10px;margin:4px 0">
+<input id="f2" placeholder="Doctor's name" style="width:100%;padding:10px;margin:4px 0">
+<input id="f3" placeholder="Clinic timings (e.g. 10 AM-8 PM, Mon-Sat)" style="width:100%;padding:10px;margin:4px 0">
+<input id="f4" placeholder="Treatments offered" style="width:100%;padding:10px;margin:4px 0">
+<select id="f5" style="width:100%;padding:10px;margin:4px 0"><option>Diwali pilot ₹4,999</option><option>₹7,999 per month plan</option><option>₹14,999 per month plan</option></select>
+<button onclick="gs()" style="width:100%;padding:12px;margin-top:6px;background:#0f9d76;color:#fff;border:0;border-radius:8px;font-size:16px">Send details on WhatsApp</button></div>
+<script>function gs(){const v=i=>document.getElementById('f'+i).value;const m="New clinic signup\nClinic: "+v(1)+"\nDoctor: "+v(2)+"\nTimings: "+v(3)+"\nTreatments: "+v(4)+"\nPlan: "+v(5);location.href='https://wa.me/917005591395?text='+encodeURIComponent(m);}</script>
+</body></html>
