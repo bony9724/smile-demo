@@ -35,11 +35,17 @@ let tab='home';
 function nav(){document.getElementById('nav').innerHTML=tabs.map(([k,l])=>`<button class="${k==tab?'on':''}" onclick="go('${k}')">${l}</button>`).join('');document.getElementById('cn').textContent=D.clinic.name}
 function go(t){tab=t;render()}
 function render(){nav();document.getElementById('m').innerHTML=V[tab]();}
-const tmpl={remind:(p,a)=>`Namaskar ${p.name} 🙏 Reminder from ${D.clinic.name}: your ${a.what} appointment is on ${a.date} at ${a.time}. Reply YES to confirm or call us to reschedule.`,
+const tmplEn={remind:(p,a)=>`Namaskar ${p.name} 🙏 Reminder from ${D.clinic.name}: your ${a.what} appointment is on ${a.date} at ${a.time}. Reply YES to confirm or call us to reschedule.`,
 plan:(p,pl)=>`Namaskar ${p.name} 🙏 This is ${D.clinic.name}. Your ${pl.what} is ${pl.status=='quoted'?'still waiting to begin':'not complete yet ('+pl.done+'/'+pl.total+' done)'}. Leaving treatment unfinished can cause pain or extra cost later. Shall we book your next visit?`,
 recall:p=>`Namaskar ${p.name} 🙏 It's been 6 months since your last visit to ${D.clinic.name}. A quick check-up and cleaning keeps problems away. Reply to book a slot 🦷`,
 due:(p,d)=>`Namaskar ${p.name} 🙏 A friendly reminder from ${D.clinic.name}: ${inr(d.amount)} is pending (${d.note}).${D.clinic.upi?` You can pay by UPI: upi://pay?pa=${D.clinic.upi}&am=${d.amount}&cu=INR`:''} Thank you!`,
 review:p=>`Thank you for visiting ${D.clinic.name}, ${p.name}! 😊 Could you leave us a quick Google review? ${D.clinic.review||''}`};
+const tmplBn={remind:(p,a)=>`নমস্কার ${p.name} 🙏 ${D.clinic.name} থেকে রিমাইন্ডার: আপনার ${a.what} অ্যাপয়েন্টমেন্ট ${a.date} তারিখে ${a.time}-এ। কনফার্ম করতে YES লিখুন, সময় বদলাতে আমাদের ফোন করুন।`,
+plan:(p,pl)=>`নমস্কার ${p.name} 🙏 ${D.clinic.name} থেকে বলছি। আপনার ${pl.what} ${pl.status=='quoted'?'এখনও শুরু হয়নি':'এখনও শেষ হয়নি ('+pl.done+'/'+pl.total+' সম্পন্ন)'}। চিকিৎসা অসম্পূর্ণ রাখলে পরে ব্যথা বা বেশি খরচ হতে পারে। পরের ভিজিট বুক করে দেব?`,
+recall:p=>`নমস্কার ${p.name} 🙏 ${D.clinic.name}-এ আপনার শেষ ভিজিটের ৬ মাস হয়ে গেছে। একটা চেক-আপ ও ক্লিনিং করিয়ে নিলে সমস্যা দূরে থাকে। স্লট বুক করতে রিপ্লাই করুন 🦷`,
+due:(p,d)=>`নমস্কার ${p.name} 🙏 ${D.clinic.name} থেকে মনে করিয়ে দিচ্ছি: ${inr(d.amount)} বাকি আছে (${d.note})।${D.clinic.upi?` UPI-তে পে করতে পারেন: upi://pay?pa=${D.clinic.upi}&am=${d.amount}&cu=INR`:''} ধন্যবাদ!`,
+review:p=>`${D.clinic.name}-এ আসার জন্য ধন্যবাদ, ${p.name}! 😊 আমাদের একটা Google রিভিউ দেবেন? ${D.clinic.review||''}`};
+const T=()=>D.clinic.lang=='bn'?tmplBn:tmplEn;
 const recalls=()=>D.patients.filter(p=>p.last&&p.last<=addDays(today(),-180));
 const V={
 home(){const t=today(),tm=addDays(t,1);const ta=D.appts.filter(a=>a.date==t),tom=D.appts.filter(a=>a.date==tm&&a.status=='booked');
@@ -48,20 +54,20 @@ return `${D.demo?'<div class="card muted">Showing sample patients. Go to Setting
 <div class="grid"><div class="stat"><b>${ta.length}</b>Appointments today</div><div class="stat"><b>${tom.length}</b>Reminders due for tomorrow</div>
 <div class="stat"><b>${inr(Math.round(pend))}</b>Unfinished treatment value</div><div class="stat"><b>${inr(dues)}</b>Pending dues</div>
 <div class="stat"><b>${recalls().length}</b>Patients due for recall</div><div class="stat"><b>${inr(D.recovered)}</b>Recovered so far</div></div>
-<h3>⚡ Tomorrow's reminders, one tap each</h3>${tom.map(a=>{const p=P(a.pid);return `<div class="card row"><div><b>${p.name}</b> · ${a.time}<div class="muted">${a.what}</div></div><a class="btn" target="_blank" href="${wa(p.phone,tmpl.remind(p,a))}" onclick="mark('appts',${a.id},'reminded')">Send reminder</a></div>`}).join('')||'<div class="card muted">No reminders due.</div>'}
+<h3>⚡ Tomorrow's reminders, one tap each</h3>${tom.map(a=>{const p=P(a.pid);return `<div class="card row"><div><b>${p.name}</b> · ${a.time}<div class="muted">${a.what}</div></div><a class="btn" target="_blank" href="${wa(p.phone,T().remind(p,a))}" onclick="mark('appts',${a.id},'reminded')">Send reminder</a></div>`}).join('')||'<div class="card muted">No reminders due.</div>'}
 <h3>Today</h3>${list(ta)}`},
 appts(){return `<div class="card"><b>New appointment</b><select id="ap">${D.patients.map(p=>`<option value="${p.id}">${p.name}</option>`)}</select>
 <div class="grid"><input id="ad" type="date" value="${today()}"><input id="at" type="time" value="10:00"></div><input id="aw" placeholder="Treatment (e.g. Check-up)"><button class="btn" onclick="addAppt()">Book</button></div>
 <h3>Upcoming</h3>${list(D.appts.filter(a=>a.date>=today()).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)))}`},
 plans(){return `<div class="card"><b>Add treatment plan</b><select id="pp">${D.patients.map(p=>`<option value="${p.id}">${p.name}</option>`)}</select><input id="pw" placeholder="e.g. Implant, RCT, Braces"><div class="grid"><input id="pv" type="number" placeholder="Value ₹"><input id="pt" type="number" placeholder="Total sittings" value="1"></div><button class="btn" onclick="addPlan()">Add</button></div>
 ${D.plans.filter(p=>p.status!='done').map(pl=>{const p=P(pl.pid);return `<div class="card"><div class="row"><div><b>${p.name}</b>: ${pl.what} <span class="tag ${pl.status=='quoted'?'w':''}">${pl.status=='quoted'?'Quoted, not started':pl.done+'/'+pl.total+' done'}</span><div class="muted">${inr(pl.value)}</div></div></div>
-<div class="row" style="margin-top:8px"><a class="btn" target="_blank" href="${wa(p.phone,tmpl.plan(p,pl))}">Send follow-up</a><button class="btn g" onclick="step(${pl.id})">+1 sitting done</button></div></div>`}).join('')||'<div class="card muted">No open treatments 🎉</div>'}`},
-recall(){return recalls().map(p=>`<div class="card row"><div><b>${p.name}</b><div class="muted">Last visit ${p.last}</div></div><a class="btn" target="_blank" href="${wa(p.phone,tmpl.recall(p))}">Send recall</a></div>`).join('')||'<div class="card muted">Nobody is due for a recall.</div>'},
+<div class="row" style="margin-top:8px"><a class="btn" target="_blank" href="${wa(p.phone,T().plan(p,pl))}">Send follow-up</a><button class="btn g" onclick="step(${pl.id})">+1 sitting done</button></div></div>`}).join('')||'<div class="card muted">No open treatments 🎉</div>'}`},
+recall(){return recalls().map(p=>`<div class="card row"><div><b>${p.name}</b><div class="muted">Last visit ${p.last}</div></div><a class="btn" target="_blank" href="${wa(p.phone,T().recall(p))}">Send recall</a></div>`).join('')||'<div class="card muted">Nobody is due for a recall.</div>'},
 dues(){return `<div class="card"><b>Add pending due</b><select id="dp">${D.patients.map(p=>`<option value="${p.id}">${p.name}</option>`)}</select><div class="grid"><input id="da" type="number" placeholder="Amount ₹"><input id="dn" placeholder="Note"></div><button class="btn" onclick="addDue()">Add</button></div>
-${D.dues.filter(d=>!d.paid).map(d=>{const p=P(d.pid);return `<div class="card row"><div><b>${p.name}</b>: ${inr(d.amount)}<div class="muted">${d.note}</div></div><div><a class="btn" target="_blank" href="${wa(p.phone,tmpl.due(p,d))}">Send reminder</a> <button class="btn g" onclick="paid(${d.id})">Mark paid</button></div></div>`}).join('')||'<div class="card muted">No pending dues.</div>'}`},
+${D.dues.filter(d=>!d.paid).map(d=>{const p=P(d.pid);return `<div class="card row"><div><b>${p.name}</b>: ${inr(d.amount)}<div class="muted">${d.note}</div></div><div><a class="btn" target="_blank" href="${wa(p.phone,T().due(p,d))}">Send reminder</a> <button class="btn g" onclick="paid(${d.id})">Mark paid</button></div></div>`}).join('')||'<div class="card muted">No pending dues.</div>'}`},
 pts(){return `<div class="card"><b>Add patient</b><input id="nn" placeholder="Name"><input id="np" placeholder="WhatsApp number with 91, e.g. 919812345678"><input id="nl" type="date" title="Last visit"><button class="btn" onclick="addPt()">Add</button></div>
-${D.patients.map(p=>`<div class="card row"><div><b>${p.name}</b><div class="muted">${p.phone} · last visit ${p.last||'–'}</div></div><a class="btn g" target="_blank" href="${wa(p.phone,tmpl.review(p))}">Ask for review</a></div>`).join('')}`},
-set(){return `<div class="card"><b>Clinic settings</b><input id="sn" value="${D.clinic.name}" placeholder="Clinic name"><input id="su" value="${D.clinic.upi}" placeholder="Clinic UPI ID"><input id="sr" value="${D.clinic.review}" placeholder="Google review link"><button class="btn" onclick="saveSet()">Save</button></div>
+${D.patients.map(p=>`<div class="card row"><div><b>${p.name}</b><div class="muted">${p.phone} · last visit ${p.last||'–'}</div></div><a class="btn g" target="_blank" href="${wa(p.phone,T().review(p))}">Ask for review</a></div>`).join('')}`},
+set(){return `<div class="card"><b>Clinic settings</b><input id="sn" value="${D.clinic.name}" placeholder="Clinic name"><input id="su" value="${D.clinic.upi}" placeholder="Clinic UPI ID"><input id="sr" value="${D.clinic.review}" placeholder="Google review link"><label class="muted">Message language</label><select id="sl"><option value="en" ${D.clinic.lang!="bn"?"selected":""}>English</option><option value="bn" ${D.clinic.lang=="bn"?"selected":""}>বাংলা</option></select><button class="btn" onclick="saveSet()">Save</button></div>
 <div class="card"><b>Data</b><p class="muted">Data is saved only on this device's browser.</p><button class="btn g" onclick="exp()">Export backup</button> <button class="btn r" onclick="fresh()">Start fresh (delete sample data)</button></div>`}};
 function list(a){return a.map(x=>{const p=P(x.pid);return `<div class="card row"><div><b>${p.name}</b> · ${x.date} ${x.time}<div class="muted">${x.what}</div></div><div><span class="tag ${x.status=='done'?'':x.status=='no-show'?'d':'w'}">${x.status}</span> <button class="btn g" onclick="mark('appts',${x.id},'done')">Done</button> <button class="btn g" onclick="mark('appts',${x.id},'no-show')">No-show</button></div></div>`}).join('')||'<div class="card muted">Nothing here.</div>'}
 const v=id=>document.getElementById(id).value;
@@ -72,7 +78,7 @@ function step(id){const pl=D.plans.find(p=>p.id==id);const before=pl.done;pl.don
 function addDue(){D.dues.push({id:nid(D.dues),pid:+v('dp'),amount:+v('da')||0,note:v('dn')||'',paid:false});save();render()}
 function paid(id){const d=D.dues.find(x=>x.id==id);d.paid=true;D.recovered+=d.amount;save();render()}
 function addPt(){if(!v('nn'))return;D.patients.push({id:nid(D.patients),name:v('nn'),phone:v('np'),last:v('nl')});save();render()}
-function saveSet(){D.clinic={name:v('sn'),upi:v('su'),review:v('sr')};save();render()}
+function saveSet(){D.clinic={name:v('sn'),upi:v('su'),review:v('sr'),lang:v('sl')};save();render()}
 function fresh(){if(confirm('Delete all sample data?')){D={clinic:D.clinic,patients:[],appts:[],plans:[],dues:[],recovered:0,demo:false};save();render()}}
 function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,1)]));a.download='clinicdesk-backup.json';a.click()}
 render();
