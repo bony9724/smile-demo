@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WhatsApp Assistant for Dental Clinics in Agartala</title>
+<style>body{margin:0;font-family:system-ui,sans-serif;color:#1b2b34;background:#f6fbf9}header{background:#0f9d76;color:#fff;padding:40px 20px;text-align:center}h1{margin:0 0 10px;font-size:28px}.wrap{max-width:640px;margin:auto;padding:20px}.card{background:#fff;border-radius:14px;padding:20px;margin:16px 0;box-shadow:0 2px 8px #0001}.btn{display:block;text-align:center;background:#25d366;color:#fff;font-weight:700;padding:16px;border-radius:12px;text-decoration:none;font-size:18px;margin:14px 0}.offer{border:2px dashed #f0a500;background:#fff8e6}li{margin:8px 0}small{color:#667}</style></head><body>
+<header><h1>🦷 Never miss a patient on WhatsApp</h1><p>WhatsApp-এ আর কোনো রোগী হাতছাড়া নয়</p></header>
+<div class="wrap">
+<a class="btn" href="https://wa.me/917005591395?text=Hi%2C%20show%20me%20the%20demo">💬 Chat on WhatsApp for a demo</a>
+<div class="card"><h2>Try it: book a pretend appointment</h2><div id="chat" style="background:#e5ddd5;border-radius:10px;padding:10px;min-height:220px;font-size:15px"></div><div id="opts" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div></div>
+<script>
+const W='https://wa.me/917005591395?text=';
+const steps={start:{m:"Namaskar 🙏 Welcome to Smile Dental, Agartala (demo). How can we help?",o:[["Book appointment","t"],["Timings & location","loc"]]},
+loc:{m:"🕘 Mon–Sat 10 AM–8 PM. 📍 Demo address, Agartala.",o:[["Book appointment","t"]]},
+t:{m:"What's the visit for?",o:[["Check-up","s"],["Tooth pain","s"],["Cleaning","s"],["Braces consult","s"]]},
+s:{m:"Here are the earliest slots:",o:[["Today 6:30 PM","ok"],["Tomorrow 10:00 AM","ok"],["Tomorrow 12:30 PM","ok"]]},
+ok:{m:"✅ Booked! You'll get a reminder before your visit. Reply RESCHEDULE anytime.",o:[],next:"rem"},
+rem:{m:"⏰ Reminder: your appointment is coming up. Confirm?",o:[["Confirm","end"],["Reschedule","s"]]},
+end:{m:"Great, see you soon! 😊 After the visit we'd ask for a Google review ⭐. That's what your patients would see. Want this for your clinic?",o:[["Get Diwali offer ₹4,999","pay"],["Chat with Anubhab","wa"]]}};
+const chat=document.getElementById('chat'),opts=document.getElementById('opts');
+function bub(t,me){const d=document.createElement('div');d.textContent=t;d.style.cssText='max-width:80%;margin:6px 0;padding:8px 10px;border-radius:8px;'+(me?'background:#dcf8c6;margin-left:auto':'background:#fff');chat.appendChild(d);}
+function go(k){if(k==='pay'){location.href='upi://pay?pa=anubhabr97-3@okicici&pn=Anubhab%20Roy&am=4999&cu=INR&tn=Diwali%20pilot%20setup';return}
+if(k==='wa'){location.href=W+encodeURIComponent("Hi, I tried the demo and want it for my clinic");return}
+const st=steps[k];bub(st.m,false);opts.innerHTML='';
+st.o.forEach(([l,n])=>{const b=document.createElement('button');b.textContent=l;b.style.cssText='padding:10px 14px;border-radius:20px;border:1px solid #0f9d76;background:#fff;color:#0f9d76;font-size:15px';b.onclick=()=>{bub(l,true);go(n)};opts.appendChild(b)});
+if(st.next)setTimeout(()=>go(st.next),3000);}
+go('start');
+</script>
+<div class="card"><h2>What it does for your clinic</h2><ul>
+<li>Replies to patients instantly, 24 hours a day, in Bengali, Hindi or English</li>
+<li>Books, moves and confirms appointments without staff typing</li>
+<li>Sends reminders before visits, so fewer patients miss their slot</li>
+<li>Asks happy patients for a Google review after treatment</li></ul></div>
+<div class="card offer"><h2>🪔 Diwali pilot offer, until 8 Nov</h2><p>Full setup within 48 hours for a one-time <b>₹4,999</b>. After that, monthly plans are ₹3,999, ₹7,999 or ₹14,999. No long contract.</p>
+<p>দীপাবলি অফার: মাত্র ₹৪,৯৯৯-এ ৪৮ ঘণ্টায় সেটআপ।</p>
+<a class="btn" href="https://wa.me/917005591395?text=I%27d%20like%20the%20Diwali%20pilot">Book my clinic's setup</a><a class="btn" style="background:#5f259f" href="upi://pay?pa=anubhabr97-3@okicici&amp;pn=Anubhab%20Roy&amp;am=4999&amp;cu=INR&amp;tn=Diwali%20pilot%20setup">Pay ₹4,999 by UPI</a><p><small>UPI ID: anubhabr97-3@okicici</small></p></div>
+<div class="card"><h2>Local and personal</h2><p>Run by Anubhab Roy, right here in Agartala. Message any time and you'll get a quick reply.</p></div>
+<small>© 2026 · Agartala, Tripura</small></div></body></html>
