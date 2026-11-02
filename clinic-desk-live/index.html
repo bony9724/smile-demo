@@ -1,0 +1,110 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clinic Desk</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#f3f6f5;color:#1d2b28}
+header{background:#075e54;color:#fff;padding:12px 14px;display:flex;justify-content:space-between;align-items:center}
+header b{font-size:18px}nav{display:flex;overflow-x:auto;background:#fff;border-bottom:1px solid #ddd}
+nav button{flex:1;padding:12px 8px;border:0;background:none;font-size:14px;white-space:nowrap;color:#555}nav button.on{color:#075e54;border-bottom:3px solid #25d366;font-weight:600}
+main{padding:12px;max-width:760px;margin:auto}.card{background:#fff;border-radius:12px;padding:12px;margin:8px 0;box-shadow:0 1px 2px #0001}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}.muted{color:#777;font-size:13px}
+.btn{border:0;border-radius:18px;padding:8px 12px;background:#25d366;color:#fff;font-size:13px;text-decoration:none;cursor:pointer}.btn.g{background:#e7eeec;color:#075e54}.btn.r{background:#e8505b}
+input,select,textarea{width:100%;padding:9px;border:1px solid #ccc;border-radius:8px;font-size:14px;margin:4px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat{background:#fff;border-radius:12px;padding:12px;text-align:center}.stat b{font-size:22px;color:#075e54;display:block}
+.tag{font-size:11px;padding:2px 8px;border-radius:10px;background:#e7f7ee;color:#0a7a3e}.tag.w{background:#fff4e0;color:#a06000}.tag.d{background:#fde8ea;color:#b0222f}
+h3{margin:14px 0 6px}
+</style></head><body>
+<header><b>🦷 Clinic Desk</b><span id="cn" class="muted" style="color:#cfe"></span></header>
+<nav id="nav"></nav><main id="m"></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://dkysdtusjfkhtpkxtxni.supabase.co', SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRreXNkdHVzamZraHRwa3h0eG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NjA4ODcsImV4cCI6MjEwOTEzNjg4N30.jEPUM7JTH-YFzH_kSOsY4HjDyDJg8Ec0Muq0e4YPX_A';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+let CID=null;
+async function boot(){const {data:{session}}=await sb.auth.getSession();if(!session)return loginView();
+ const {data:st}=await sb.from('staff').select('clinic_id').eq('user_id',session.user.id).maybeSingle();
+ if(!st){document.getElementById('m').innerHTML='<div class="card">This login is not linked to a clinic yet. Ask Anubhab to add you.</div>';return}
+ CID=st.clinic_id;await load();
+ sb.channel('live').on('postgres_changes',{event:'*',schema:'public',filter:'clinic_id=eq.'+CID},()=>load().then(render)).subscribe();
+ render()}
+function loginView(){document.getElementById('m').innerHTML=`<div class="card"><b>Staff login</b><input id="le" type="email" placeholder="Email"><input id="lp" type="password" placeholder="Password"><button class="btn" onclick="login()">Log in</button><p class="muted" id="lerr"></p></div>`}
+async function login(){const {error}=await sb.auth.signInWithPassword({email:v('le'),password:v('lp')});if(error)document.getElementById('lerr').textContent=error.message;else boot()}
+async function logout(){await sb.auth.signOut();location.reload()}
+const dOf=ts=>ymd(new Date(ts)),tOf=ts=>new Date(ts).toTimeString().slice(0,5);
+async function load(){const q=t=>sb.from(t).select('*').eq('clinic_id',CID);
+ const [c,p,a,pl,du,ms]=await Promise.all([sb.from('clinics').select('*').eq('id',CID).single(),q('patients'),q('appointments'),q('treatment_plans'),q('dues'),sb.from('messages').select('*').eq('clinic_id',CID).eq('status','manual').limit(100)]);
+ D={clinic:{name:c.data.name,upi:c.data.upi_id||'',review:c.data.review_link||'',lang:c.data.lang},
+ patients:(p.data||[]).map(x=>({id:x.id,name:x.name,phone:x.phone,last:x.last_visit})),
+ appts:(a.data||[]).map(x=>({id:x.id,pid:x.patient_id,date:dOf(x.starts_at),time:tOf(x.starts_at),what:x.treatment,status:x.status=='no_show'?'no-show':x.status})),
+ plans:(pl.data||[]).map(x=>({id:x.id,pid:x.patient_id,what:x.treatment,value:x.value_inr,done:x.sittings_done,total:x.sittings_total,status:x.status})),
+ dues:(du.data||[]).map(x=>({id:x.id,pid:x.patient_id,amount:x.amount_inr,note:x.note||'',paid:!!x.paid_at})),
+ outbox:ms.data||[],recovered:0,demo:false};
+ D.recovered=D.dues.filter(d=>d.paid).reduce((s,d)=>s+d.amount,0)}
+const K='clinicdesk_v1';
+const ymd=x=>x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');
+const today=()=>ymd(new Date());
+const addDays=(d,n)=>{const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+n);return ymd(x)};
+let D={clinic:{name:'Clinic Desk'},patients:[],appts:[],plans:[],dues:[],outbox:[],recovered:0};
+function seed(){const t=today(),tm=addDays(t,1);return{clinic:{name:"Smile Dental, Agartala",upi:"",review:""},
+patients:[{id:1,name:"Rahul Das",phone:"919800000001",last:addDays(t,-190)},{id:2,name:"Priya Saha",phone:"919800000002",last:addDays(t,-30)},{id:3,name:"Amit Debnath",phone:"919800000003",last:addDays(t,-200)}],
+appts:[{id:1,pid:1,date:t,time:"10:00",what:"Check-up",status:"booked"},{id:2,pid:2,date:tm,time:"11:30",what:"RCT sitting 2",status:"booked"},{id:3,pid:3,date:tm,time:"17:00",what:"Cleaning",status:"booked"}],
+plans:[{id:1,pid:2,what:"RCT (3 sittings)",value:6000,done:1,total:3,status:"active"},{id:2,pid:3,what:"Implant quote",value:25000,done:0,total:1,status:"quoted"}],
+dues:[{id:1,pid:1,amount:1500,note:"Visit on "+addDays(t,-10),paid:false}],recovered:0,demo:true}}
+const save=()=>{};const ok=r=>{if(r.error)alert(r.error.message)};
+const P=id=>D.patients.find(p=>p.id==id)||{name:"?",phone:""};
+const nid=a=>Math.max(0,...a.map(x=>x.id))+1;
+const wa=(ph,msg)=>`https://wa.me/${ph.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`;
+const inr=n=>"₹"+Number(n||0).toLocaleString('en-IN');
+const tabs=[["home","Today"],["appts","Appointments"],["plans","Treatments"],["recall","Recalls"],["dues","Dues"],["pts","Patients"],["out","Outbox"],["set","Settings"]];
+let tab='home';
+function nav(){document.getElementById('nav').innerHTML=tabs.map(([k,l])=>`<button class="${k==tab?'on':''}" onclick="go('${k}')">${l}</button>`).join('');document.getElementById('cn').textContent=D.clinic.name}
+function go(t){tab=t;render()}
+function render(){nav();document.getElementById('m').innerHTML=V[tab]();}
+const tmplEn={remind:(p,a)=>`Namaskar ${p.name} 🙏 Reminder from ${D.clinic.name}: your ${a.what} appointment is on ${a.date} at ${a.time}. Reply YES to confirm or call us to reschedule.`,
+plan:(p,pl)=>`Namaskar ${p.name} 🙏 This is ${D.clinic.name}. Your ${pl.what} is ${pl.status=='quoted'?'still waiting to begin':'not complete yet ('+pl.done+'/'+pl.total+' done)'}. Leaving treatment unfinished can cause pain or extra cost later. Shall we book your next visit?`,
+recall:p=>`Namaskar ${p.name} 🙏 It's been 6 months since your last visit to ${D.clinic.name}. A quick check-up and cleaning keeps problems away. Reply to book a slot 🦷`,
+due:(p,d)=>`Namaskar ${p.name} 🙏 A friendly reminder from ${D.clinic.name}: ${inr(d.amount)} is pending (${d.note}).${D.clinic.upi?` You can pay by UPI: upi://pay?pa=${D.clinic.upi}&am=${d.amount}&cu=INR`:''} Thank you!`,
+review:p=>`Thank you for visiting ${D.clinic.name}, ${p.name}! 😊 Could you leave us a quick Google review? ${D.clinic.review||''}`};
+const tmplBn={remind:(p,a)=>`নমস্কার ${p.name} 🙏 ${D.clinic.name} থেকে রিমাইন্ডার: আপনার ${a.what} অ্যাপয়েন্টমেন্ট ${a.date} তারিখে ${a.time}-এ। কনফার্ম করতে YES লিখুন, সময় বদলাতে আমাদের ফোন করুন।`,
+plan:(p,pl)=>`নমস্কার ${p.name} 🙏 ${D.clinic.name} থেকে বলছি। আপনার ${pl.what} ${pl.status=='quoted'?'এখনও শুরু হয়নি':'এখনও শেষ হয়নি ('+pl.done+'/'+pl.total+' সম্পন্ন)'}। চিকিৎসা অসম্পূর্ণ রাখলে পরে ব্যথা বা বেশি খরচ হতে পারে। পরের ভিজিট বুক করে দেব?`,
+recall:p=>`নমস্কার ${p.name} 🙏 ${D.clinic.name}-এ আপনার শেষ ভিজিটের ৬ মাস হয়ে গেছে। একটা চেক-আপ ও ক্লিনিং করিয়ে নিলে সমস্যা দূরে থাকে। স্লট বুক করতে রিপ্লাই করুন 🦷`,
+due:(p,d)=>`নমস্কার ${p.name} 🙏 ${D.clinic.name} থেকে মনে করিয়ে দিচ্ছি: ${inr(d.amount)} বাকি আছে (${d.note})।${D.clinic.upi?` UPI-তে পে করতে পারেন: upi://pay?pa=${D.clinic.upi}&am=${d.amount}&cu=INR`:''} ধন্যবাদ!`,
+review:p=>`${D.clinic.name}-এ আসার জন্য ধন্যবাদ, ${p.name}! 😊 আমাদের একটা Google রিভিউ দেবেন? ${D.clinic.review||''}`};
+const T=()=>D.clinic.lang=='bn'?tmplBn:tmplEn;
+const recalls=()=>D.patients.filter(p=>p.last&&p.last<=addDays(today(),-180));
+const V={
+home(){const t=today(),tm=addDays(t,1);const ta=D.appts.filter(a=>a.date==t),tom=D.appts.filter(a=>a.date==tm&&a.status=='booked');
+const pend=D.plans.filter(p=>p.status!='done').reduce((s,p)=>s+p.value*(1-p.done/p.total),0),dues=D.dues.filter(d=>!d.paid).reduce((s,d)=>s+d.amount,0);
+return `${D.demo?'<div class="card muted">Showing sample patients. Go to Settings and tap "Start fresh" to use your own data.</div>':''}
+<div class="grid"><div class="stat"><b>${ta.length}</b>Appointments today</div><div class="stat"><b>${tom.length}</b>Reminders due for tomorrow</div>
+<div class="stat"><b>${inr(Math.round(pend))}</b>Unfinished treatment value</div><div class="stat"><b>${inr(dues)}</b>Pending dues</div>
+<div class="stat"><b>${recalls().length}</b>Patients due for recall</div><div class="stat"><b>${inr(D.recovered)}</b>Recovered so far</div></div>
+<h3>⚡ Tomorrow's reminders, one tap each</h3>${tom.map(a=>{const p=P(a.pid);return `<div class="card row"><div><b>${p.name}</b> · ${a.time}<div class="muted">${a.what}</div></div><a class="btn" target="_blank" href="${wa(p.phone,T().remind(p,a))}" onclick="mark('appts','${a.id}','reminded')">Send reminder</a></div>`}).join('')||'<div class="card muted">No reminders due.</div>'}
+<h3>Today</h3>${list(ta)}`},
+appts(){return `<div class="card"><b>New appointment</b><select id="ap">${D.patients.map(p=>`<option value="${p.id}">${p.name}</option>`)}</select>
+<div class="grid"><input id="ad" type="date" value="${today()}"><input id="at" type="time" value="10:00"></div><input id="aw" placeholder="Treatment (e.g. Check-up)"><button class="btn" onclick="addAppt()">Book</button></div>
+<h3>Upcoming</h3>${list(D.appts.filter(a=>a.date>=today()).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)))}`},
+plans(){return `<div class="card"><b>Add treatment plan</b><select id="pp">${D.patients.map(p=>`<option value="${p.id}">${p.name}</option>`)}</select><input id="pw" placeholder="e.g. Implant, RCT, Braces"><div class="grid"><input id="pv" type="number" placeholder="Value ₹"><input id="pt" type="number" placeholder="Total sittings" value="1"></div><button class="btn" onclick="addPlan()">Add</button></div>
+${D.plans.filter(p=>p.status!='done').map(pl=>{const p=P(pl.pid);return `<div class="card"><div class="row"><div><b>${p.name}</b>: ${pl.what} <span class="tag ${pl.status=='quoted'?'w':''}">${pl.status=='quoted'?'Quoted, not started':pl.done+'/'+pl.total+' done'}</span><div class="muted">${inr(pl.value)}</div></div></div>
+<div class="row" style="margin-top:8px"><a class="btn" target="_blank" href="${wa(p.phone,T().plan(p,pl))}">Send follow-up</a><button class="btn g" onclick="step('${pl.id}')">+1 sitting done</button></div></div>`}).join('')||'<div class="card muted">No open treatments 🎉</div>'}`},
+out(){return (D.outbox||[]).map(m=>{const p=P(m.patient_id);return `<div class="card row"><div><b>${p.name}</b><div class="muted">${m.kind}</div></div><a class="btn" target="_blank" href="${wa(p.phone,m.body||'')}" onclick="sentM('${m.id}')">Send</a></div>`}).join('')||'<div class="card muted">Nothing waiting. Automatic messages are going out on their own.</div>'},
+recall(){return recalls().map(p=>`<div class="card row"><div><b>${p.name}</b><div class="muted">Last visit ${p.last}</div></div><a class="btn" target="_blank" href="${wa(p.phone,T().recall(p))}">Send recall</a></div>`).join('')||'<div class="card muted">Nobody is due for a recall.</div>'},
+dues(){return `<div class="card"><b>Add pending due</b><select id="dp">${D.patients.map(p=>`<option value="${p.id}">${p.name}</option>`)}</select><div class="grid"><input id="da" type="number" placeholder="Amount ₹"><input id="dn" placeholder="Note"></div><button class="btn" onclick="addDue()">Add</button></div>
+${D.dues.filter(d=>!d.paid).map(d=>{const p=P(d.pid);return `<div class="card row"><div><b>${p.name}</b>: ${inr(d.amount)}<div class="muted">${d.note}</div></div><div><a class="btn" target="_blank" href="${wa(p.phone,T().due(p,d))}">Send reminder</a> <button class="btn g" onclick="paid('${d.id}')">Mark paid</button></div></div>`}).join('')||'<div class="card muted">No pending dues.</div>'}`},
+pts(){return `<div class="card"><b>Add patient</b><input id="nn" placeholder="Name"><input id="np" placeholder="WhatsApp number with 91, e.g. 919812345678"><input id="nl" type="date" title="Last visit"><button class="btn" onclick="addPt()">Add</button></div>
+${D.patients.map(p=>`<div class="card row"><div><b>${p.name}</b><div class="muted">${p.phone} · last visit ${p.last||'–'}</div></div><a class="btn g" target="_blank" href="${wa(p.phone,T().review(p))}">Ask for review</a></div>`).join('')}`},
+set(){return `<div class="card"><b>Clinic settings</b><input id="sn" value="${D.clinic.name}" placeholder="Clinic name"><input id="su" value="${D.clinic.upi}" placeholder="Clinic UPI ID"><input id="sr" value="${D.clinic.review}" placeholder="Google review link"><label class="muted">Message language</label><select id="sl"><option value="en" ${D.clinic.lang!="bn"?"selected":""}>English</option><option value="bn" ${D.clinic.lang=="bn"?"selected":""}>বাংলা</option></select><button class="btn" onclick="saveSet()">Save</button></div>
+<div class="card"><b>Data</b><p class="muted">Data syncs live for every staff login of this clinic.</p><button class="btn g" onclick="exp()">Export backup</button> <button class="btn r" onclick="fresh()">Log out</button></div>`}};
+function list(a){return a.map(x=>{const p=P(x.pid);return `<div class="card row"><div><b>${p.name}</b> · ${x.date} ${x.time}<div class="muted">${x.what}</div></div><div><span class="tag ${x.status=='done'?'':x.status=='no-show'?'d':'w'}">${x.status}</span> <button class="btn g" onclick="mark('appts','${x.id}','done')">Done</button> <button class="btn g" onclick="mark('appts','${x.id}','no-show')">No-show</button></div></div>`}).join('')||'<div class="card muted">Nothing here.</div>'}
+const v=id=>document.getElementById(id).value;
+async function mark(c,id,s){if(s=='reminded')return;const x=D.appts.find(i=>i.id==id);ok(await sb.from('appointments').update({status:s=='no-show'?'no_show':s}).eq('id',id));if(s=='done')ok(await sb.from('patients').update({last_visit:x.date}).eq('id',x.pid));await load();render()}
+async function addAppt(){const r=await sb.from('appointments').insert({clinic_id:CID,patient_id:v('ap'),starts_at:new Date(v('ad')+'T'+v('at')+':00+05:30').toISOString(),treatment:v('aw')||'Check-up'});if(r.error&&r.error.code=='23505')return alert('That slot is already booked.');ok(r);await load();render()}
+async function addPlan(){ok(await sb.from('treatment_plans').insert({clinic_id:CID,patient_id:v('pp'),treatment:v('pw')||'Treatment',value_inr:+v('pv')||0,sittings_total:+v('pt')||1,next_followup:addDays(today(),3)}));await load();render()}
+async function step(id){const pl=D.plans.find(p=>p.id==id);const d=Math.min(pl.total,pl.done+1);ok(await sb.from('treatment_plans').update({sittings_done:d,status:d>=pl.total?'done':'active',next_followup:addDays(today(),7)}).eq('id',id));await load();render()}
+async function addDue(){ok(await sb.from('dues').insert({clinic_id:CID,patient_id:v('dp'),amount_inr:+v('da')||0,note:v('dn')||''}));await load();render()}
+async function paid(id){ok(await sb.from('dues').update({paid_at:new Date().toISOString()}).eq('id',id));await load();render()}
+async function addPt(){if(!v('nn'))return;ok(await sb.from('patients').insert({clinic_id:CID,name:v('nn'),phone:v('np').replace(/\D/g,''),last_visit:v('nl')||null,wa_opt_in:confirm('Has this patient agreed to receive WhatsApp messages?')}));await load();render()}
+async function saveSet(){ok(await sb.from('clinics').update({name:v('sn'),upi_id:v('su'),review_link:v('sr'),lang:v('sl')}).eq('id',CID));await load();render()}
+function fresh(){logout()}
+function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,1)]));a.download='clinicdesk-backup.json';a.click()}
+async function sentM(id){await sb.from('messages').update({status:'sent',sent_at:new Date().toISOString()}).eq('id',id);setTimeout(()=>load().then(render),500)}
+nav();boot();
+</script></body></html>
